@@ -6,14 +6,20 @@ module FFMPEG
     attr_reader :video_stream, :video_codec, :video_bitrate, :colorspace, :resolution, :sar, :dar
     attr_reader :audio_stream, :audio_codec, :audio_bitrate, :audio_sample_rate
     attr_reader :container
+    attr_reader :force_format
 
-    def initialize(path)
+    def initialize(path, force_format: false)
       raise Errno::ENOENT, "the file '#{path}' does not exist" unless File.exists?(path)
 
       @path = path
+      @force_format = force_format
 
       # ffmpeg will output to stderr
-      command = "#{FFMPEG.ffmpeg_binary} -i #{Shellwords.escape(path)}"
+      if @force_format
+        command = "#{FFMPEG.ffmpeg_binary} -f '#{@force_format}' -i #{Shellwords.escape(path)}"
+      else
+        command = "#{FFMPEG.ffmpeg_binary} -i #{Shellwords.escape(path)}"
+      end
       output = Open3.popen3(command) { |stdin, stdout, stderr| stderr.read }
 
       fix_encoding(output)
